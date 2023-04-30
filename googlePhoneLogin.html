@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Social Login</title>
+  </head>
+  <body>
+    <button id="googleLogin">Sign in with Google</button>
+
+    <form>
+      <input id="phoneNumberInput" placeholder="Phone number" />
+      <button id="sendCodeButton">Get verification code</button>
+    </form>
+
+    <form>
+      <input id="codeInput" placeholder="SMS code" />
+      <button id="verifyCodeButton">Verify code</button>
+    </form>
+
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-analytics.js";
+      import {
+        getAuth,
+        signInWithPopup,
+        GoogleAuthProvider,
+        signInWithPhoneNumber,
+        RecaptchaVerifier,
+      } from "https://www.gstatic.com/firebasejs/9.21.0/firebase-auth.js";
+
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyD3QBViwbMRZROgXaypzaSuqTdl-yXXPMA",
+        authDomain: "login-288f2.firebaseapp.com",
+        projectId: "login-288f2",
+        storageBucket: "login-288f2.appspot.com",
+        messagingSenderId: "55372112046",
+        appId: "1:55372112046:web:74b098caac4ee7a5fc0d3f",
+        measurementId: "G-NSQ1NWTV1D",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      const provider = new GoogleAuthProvider();
+      const auth = getAuth();
+
+      auth.languageCode = "ko";
+      // To apply the default browser preference instead of explicitly setting it.
+      // firebase.auth().useDeviceLanguage();
+
+      document.querySelector("#googleLogin").addEventListener("click", () => {
+        signInWithPopup(auth, provider)
+          .then((result) => {
+            // This gives you a Google Access Token. You can use it to access the Google API.
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            const token = credential.accessToken;
+            // The signed-in user info.
+            const user = result.user;
+            // IdP data available using getAdditionalUserInfo(result)
+            // ...
+
+            console.log(result);
+          })
+          .catch((error) => {
+            // Handle Errors here.
+            const errorCode = error.code;
+            const errorMessage = error.message;
+            // The email of the user's account used.
+            const email = error.customData.email;
+            // The AuthCredential type that was used.
+            const credential = GoogleAuthProvider.credentialFromError(error);
+            // ...
+            console.log(error);
+          });
+      });
+
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        "sendCodeButton",
+        {
+          size: "invisible",
+          callback: (response) => {
+            // reCAPTCHA solved, allow signInWithPhoneNumber.
+            onSignInSubmit();
+          },
+        },
+        auth
+      );
+
+      document
+        .querySelector("#sendCodeButton")
+        .addEventListener("click", (event) => {
+          event.preventDefault();
+          const countryCode = "+82";
+          const phoneNumber =
+            countryCode + document.querySelector("#phoneNumberInput").value;
+          const appVerifier = window.recaptchaVerifier;
+
+          signInWithPhoneNumber(auth, phoneNumber, appVerifier)
+            .then((confirmationResult) => {
+              // SMS sent. Prompt user to type the code from the message, then sign the
+              // user in with confirmationResult.confirm(code).
+              window.confirmationResult = confirmationResult;
+              // ...
+              console.log(confirmationResult);
+            })
+            .catch((error) => {
+              // Error; SMS not sent
+              // ...
+              console.log(error);
+            });
+        });
+
+      document
+        .querySelector("#verifyCodeButton")
+        .addEventListener("click", (event) => {
+          event.preventDefault();
+          const code = document.querySelector("#codeInput").value;
+          confirmationResult
+            .confirm(code)
+            .then((result) => {
+              // User signed in successfully.
+              const user = result.user;
+              // ...
+              console.log(result);
+              location.href = "success.html";
+            })
+            .catch((error) => {
+              // User couldn't sign in (bad verification code?)
+              // ...
+              console.log(error);
+            });
+        });
+    </script>
+  </body>
+</html>
